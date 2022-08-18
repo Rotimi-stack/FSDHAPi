@@ -2,6 +2,7 @@
 using FSDHAPi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace FSDHAPi.Controllers
 {
+    [ApiController]
     public class FSDH360Controller : Controller
     {
         private readonly IConfiguration _configuration;
@@ -147,8 +149,9 @@ namespace FSDHAPi.Controllers
 
         [HttpPost]
         [Route("api/fdsh360/dynamic/account/create")]
-        public async Task<object> CreateDynamicAccount([FromBody] CreateDynamicAccountPayload fn)
+        public async Task<object> CreateDynamicAccount(CreateDynamicAccountPayload fn)
         {
+            CreateDynamicAccountPayload f = new CreateDynamicAccountPayload();
             ErrorResponse error = new ErrorResponse();
             var testkey = _configuration.GetSection("Token").Value.ToString();
             var baseaddress = _configuration.GetSection("CreateDynamicAccountURL").Value.ToString();
@@ -163,7 +166,7 @@ namespace FSDHAPi.Controllers
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {testkey}");
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + testkey);
                 client.BaseAddress = new Uri(baseaddress);
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.Timeout = new System.TimeSpan(0, 0, 1, 0);
@@ -380,12 +383,14 @@ namespace FSDHAPi.Controllers
         }
 
         [HttpGet]
-        [Route("api/fdsh360/get/dynamic/account/assigned")]
+        [ApiVersion("1.0")]
+        [Route("api/{v:apiVersion}/FSDH360/get/dynamic/account/assigned")]
         public async Task<object> GetAllAssignedDynamicAccount([FromRoute] GetUnAssignedDynamicAccount fn)
         {
+            object respinfo = new object();
             ErrorResponse error = new ErrorResponse();
             var testkey = _configuration.GetSection("Token").Value.ToString();
-            var baseaddress = _configuration.GetSection("GetAllassignedDynamicAccountURL").Value.ToString();
+            var baseaddress = _configuration.GetSection("GetassignedDynamicAccountURL").Value.ToString();
 
             error.status = true;
 
@@ -397,24 +402,27 @@ namespace FSDHAPi.Controllers
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {testkey}");
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue($"Bearer", $"{testkey}");
+               // client.DefaultRequestHeaders.Add("Authorization", "Bearer " + testkey);
                 client.BaseAddress = new Uri(baseaddress);
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.Timeout = new System.TimeSpan(0, 0, 1, 0);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                // var stringContent = new StringContent(JsonConvert.SerializeObject(py), Encoding.UTF8, "Application/Json");
-                var resp = await client.GetAsync(baseaddress);
+                HttpResponseMessage resp = await client.GetAsync(baseaddress);
                 var banksResponse = resp.Content.ReadAsStringAsync().Result;
 
-                return (banksResponse);
+
+                if (resp.IsSuccessStatusCode)
+                {
+
+                    respinfo = JsonConvert.DeserializeObject<object>(banksResponse);
+
+
+                }
+
+                return (respinfo);
             }
-
-
-
-
-
-
 
         }
 

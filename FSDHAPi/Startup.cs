@@ -29,6 +29,14 @@ namespace FSDHAPi
             services.AddHttpClient();
             services.ConfigureSqlContext(Configuration);
             services.AddControllers();
+
+            services.AddApiVersioning(x =>
+            {
+                x.UseApiBehavior = false;
+                x.DefaultApiVersion = new ApiVersion(3, 1);
+                x.AssumeDefaultVersionWhenUnspecified = true;
+                x.ReportApiVersions = true;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
